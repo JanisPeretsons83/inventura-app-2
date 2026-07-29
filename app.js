@@ -109,6 +109,49 @@ document.getElementById("imageModal").onclick = () => {
   document.getElementById("imageModal").style.display = "none";
 };
 
+// --- Filtrēšana lauciņiem, kas drīkst saturēt tikai ciparus ---
+const numericFields = [
+  'thickness','width','packWidth','packLength','packHeight','avgLength',
+  'pieces','month','year'
+];
+
+numericFields.forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  // Automātiska filtrēšana — noņem visu, kas nav cipars
+  el.addEventListener('input', (e) => {
+    // Atstāj tikai ciparus (ja vajag decimāļus, maini regex uz /[^\d.,-]/g utt.)
+    e.target.value = e.target.value.replace(/\D/g, '');
+  });
+});
+
+// --- Toggle funkcija laukiem, kuros reizēm jāraksta teksts ("gali") ---
+function makeToggle(lengthId, btnId) {
+  const input = document.getElementById(lengthId);
+  const btn = document.getElementById(btnId);
+  if (!input || !btn) return;
+  let isNumeric = true; // sākumā ciparu režīms
+
+  btn.addEventListener('click', () => {
+    if (isNumeric) {
+      // Pārslēgt uz tekstu: ļaut burtus, mainīt inputmode
+      input.inputMode = 'text';
+      input.removeAttribute('pattern');
+      btn.textContent = 'Cipari';
+    } else {
+      // Atpakaļ uz cipariem: atjaunot pattern un notīrīt nevajadzīgos simbolus
+      input.inputMode = 'numeric';
+      input.setAttribute('pattern', '[0-9]*');
+      input.value = input.value.replace(/\D/g, '');
+      btn.textContent = 'Gali';
+    }
+    isNumeric = !isNumeric;
+    input.focus();
+  });
+}
+
+makeToggle('length','toggleLength');
+makeToggle('packLength','togglePackLength');
 
 function setHeaderInfo() {
 
