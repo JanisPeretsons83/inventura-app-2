@@ -43,26 +43,34 @@
 
 <!-- Izmēri -->
 <div class="row">
-  <input id="thickness" type="number" placeholder="Biezums *">
-  <input id="width" type="number" placeholder="Platums *">
-  <input id="length" placeholder="Garums (mm)/ gali">
+  <input id="thickness" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Biezums *">
+  <input id="width" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Platums *">
+
+  <!-- Garums ar pārslēgšanas pogu (lai varētu būt arī 'gali') -->
+  <div style="display:flex;gap:6px;align-items:center;flex:1;">
+    <input id="length" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Garums (mm) / gali" style="flex:1;">
+    <button type="button" id="toggleLength" title="Pārslēgt ciparus/tekstus">Gali ↔ Cipari</button>
+  </div>
 </div>
 
 <!-- GALI (pakas izmēri) -->
 <div id="galiInputs" class="row" style="display:none">
-  <input id="packWidth" type="number" placeholder="Platums">
-  <input id="packLength" type="number" placeholder="Garums">
-  <input id="packHeight" type="number" placeholder="Augstums">
-  <input id="avgLength" type="number" placeholder="Vidējais garums (mm)">
+  <input id="packWidth" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Platums">
+  <div style="display:flex;gap:6px;align-items:center;flex:1;">
+    <input id="packLength" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Garums">
+    <button type="button" id="togglePackLength" title="Pārslēgt ciparus/tekstus">Gali ↔ Cipari</button>
+  </div>
+  <input id="packHeight" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Augstums">
+  <input id="avgLength" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Vidējais garums (mm)">
 </div>
 
 <!-- Gabali -->
-<input id="pieces" type="number" placeholder="Gabali pakā">
+<input id="pieces" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Gabali pakā">
 
-  <!-- Pakas + datums -->
+<!-- Pakas + datums -->
 <div class="row">
-  <input id="month" type="number" placeholder="Mēn *">
-  <input id="year" type="number" placeholder="Gads *">
+  <input id="month" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Mēn *">
+  <input id="year" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Gads *">
 </div>
 
   <!-- Nosaukums + kods -->
