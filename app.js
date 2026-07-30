@@ -1,4 +1,6 @@
 let data = [];
+let editIndex = null;
+let currentLocation = null;
 
 // ✅ Login
 
@@ -7,14 +9,20 @@ let selectedBtn = null;
 const areasByLocation = {
 
   "Dārdu": [
-    "2-1", "2-2", "2-3", "2-4", "2-5", "2-6", "3-1", "3-2", "3-3", "3-4", "3-5", "3-6",
-  "3-7", "4-1", "5-1", "5-2", "6-1", "7-1", "7-2", "7-3", "7-4", "7-5", "7-6", "9-1",
-  "9-2", "9-3", "9-4", "9-5", "9-6", "9-7", "9-8", "9-9", "9-10", "9-11", "9-12", "9-13",
-  "9-14", "9-15", "10-1", "10-2", "10-3", "10-4", "10-5", "12-1", "12-2", "12-3", "12-4", "12-5"
+    "2-1", "2-2", "2-3", "2-4", "2-5", "2-6", "3-1", "3-2", "3-3", "3-4",
+    "3-5", "3-6", "3-7", "4-1", "5-1", "5-2", "6-1", "7-1", "7-2", "7-3",
+    "7-4", "7-5", "7-6", "9-1", "9-2", "9-3", "9-4", "9-5", "9-6", "9-7",
+    "9-8", "9-9", "9-10", "9-11", "9-12", "9-13", "9-14", "9-15", "10-1",
+    "10-2", "10-3", "10-4", "10-5", "12-1", "12-2", "12-3", "12-4", "12-5"
   ],
 
   "Cecīļu": [
-    "1-1", "1-2", "1-3"
+    "3-1", "4-1", "4-2", "4-3", "ZM", "B-L", "D-L", "N-1", "N-2", "N-3",
+    "N-4", "N-5", "N-6", "N-7", "N-8", "N-9", "8-1", "8-1", "8-2", "8-3",
+    "8-4", "8-5", "8-6", "8-7", "9-5", "9-6", "9-7", "9-8", "9-9", "9-10",
+    "9-11", "11-6", "11-7", "11-8", "11-9", "11-10", "11-11", "11-12",
+    "11-13", "11-14",
+    "11-15"
   ]
 
 };
@@ -34,22 +42,34 @@ function updateAreas() {
   });
 }
 
+function showMessage(text) {
+
+  const msg = document.getElementById("message");
+
+  msg.innerText = text;
+  msg.style.display = "block";
+
+  setTimeout(() => {
+    msg.style.display = "none";
+  }, 1500);
+}
 
 function updateMaps() {
 
   const location = localStorage.getItem("location");
   const container = document.getElementById("mapLinks");
+  const BASE_PATH = "/Inventory-app";
 
   container.innerHTML = ""; // notīra iepriekšējo
 
   if (location === "Dārdu") {
 
     container.innerHTML = `
-      <a href="#" onclick="openImageFromSrc('dardu_map1.jpeg'); return false;">
+      <a href="#" onclick="openImageFromSrc('${BASE_PATH}/dardu_map1.jpeg'); return false;">
         📍 Karte 1
       </a>
 
-      <a href="#" onclick="openImageFromSrc('dardu_map2.jpeg'); return false;">
+      <a href="#" onclick="openImageFromSrc('${BASE_PATH}/dardu_map2.jpeg'); return false;">
         📍 Karte 2
       </a>
     `;
@@ -57,7 +77,7 @@ function updateMaps() {
   } else if (location === "Cecīļu") {
 
     container.innerHTML = `
-      <a href="#" onclick="openImageFromSrc('cecilu_map.jpeg'); return false;">
+      <a href="#" onclick="openImageFromSrc('${BASE_PATH}/cecilu_map.jpeg'); return false;">
         📍 Karte
       </a>
     `;
@@ -104,55 +124,6 @@ function openImage(img) {
   modalImg.src = img.src;
 }
 
-// aizvēršana
-document.getElementById("imageModal").onclick = () => {
-  document.getElementById("imageModal").style.display = "none";
-};
-
-// --- Filtrēšana lauciņiem, kas drīkst saturēt tikai ciparus ---
-const numericFields = [
-  'thickness','width','packWidth','packLength','packHeight','avgLength',
-  'pieces','month','year'
-];
-
-numericFields.forEach(id => {
-  const el = document.getElementById(id);
-  if (!el) return;
-  // Automātiska filtrēšana — noņem visu, kas nav cipars
-  el.addEventListener('input', (e) => {
-    // Atstāj tikai ciparus (ja vajag decimāļus, maini regex uz /[^\d.,-]/g utt.)
-    e.target.value = e.target.value.replace(/\D/g, '');
-  });
-});
-
-// --- Toggle funkcija laukiem, kuros reizēm jāraksta teksts ("gali") ---
-function makeToggle(lengthId, btnId) {
-  const input = document.getElementById(lengthId);
-  const btn = document.getElementById(btnId);
-  if (!input || !btn) return;
-  let isNumeric = true; // sākumā ciparu režīms
-
-  btn.addEventListener('click', () => {
-    if (isNumeric) {
-      // Pārslēgt uz tekstu: ļaut burtus, mainīt inputmode
-      input.inputMode = 'text';
-      input.removeAttribute('pattern');
-      btn.textContent = 'Cipari';
-    } else {
-      // Atpakaļ uz cipariem: atjaunot pattern un notīrīt nevajadzīgos simbolus
-      input.inputMode = 'numeric';
-      input.setAttribute('pattern', '[0-9]*');
-      input.value = input.value.replace(/\D/g, '');
-      btn.textContent = 'Gali';
-    }
-    isNumeric = !isNumeric;
-    input.focus();
-  });
-}
-
-makeToggle('length','toggleLength');
-makeToggle('packLength','togglePackLength');
-
 function setHeaderInfo() {
 
   const name = localStorage.getItem("userName") || "";
@@ -197,9 +168,15 @@ function saveUser() {
   updateMaps();
 }
 
-
+function safeFileName(text) {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "_");
+}
 
 // ✅ PIEVIENO IERAKSTU
+
 function add() {
 
   const areaVal = document.getElementById("area").value.trim();
@@ -260,21 +237,21 @@ function add() {
     m3PerPack =
       (packWidth * packLength * packHeight) / 1000000000;
 
-    // ✅ REĀLAIS GABALU APRĒĶINS
     let crossSection = thicknessVal * widthVal;
     let packSection = packWidth * packHeight;
 
     let piecesInLayer = Math.floor(packSection / crossSection);
     let layers = Math.floor(packLength / avgLength);
 
-    let efficiency = 0.7;
+    // ✅ 95% efektivitāte
+    let efficiency = 0.95;
 
     piecesPerPack = Math.max(1,
       Math.floor(piecesInLayer * layers * efficiency)
     );
 
-    // ✅ UZREIZ PARĀDA LAUKĀ
-    document.getElementById("pieces").value = piecesPerPack;
+    // ✅ parāda ar ≈
+    document.getElementById("pieces").value = "≈ " + piecesPerPack;
 
     totalM3 = m3PerPack * packagesVal;
 
@@ -322,32 +299,56 @@ function add() {
     total: totalM3
   };
 
-  data.push(entry);
-  localStorage.setItem("data", JSON.stringify(data));
+  
+if (editIndex !== null) {
 
-  // ✅ saglabā formu
-  localStorage.setItem("lastForm", JSON.stringify({
-    area: areaVal,
-    thickness: thicknessVal,
-    width: widthVal,
-    grade: document.getElementById("grade").value
-  }));
+  data[editIndex] = entry;
+
+  editIndex = null;
+
+document.getElementById("addBtn").innerText =
+    "➕ Pievienot";
+
+  document.getElementById("cancelEditBtn").style.display =
+    "none";
+
+  showMessage("✅ Labojums saglabāts");
+
+} else {
+
+  data.push(entry);
+
+  showMessage("✅ Ieraksts pievienots");
+}
+
+localStorage.setItem("data", JSON.stringify(data));
+
 
   clearError();
   render();
 
-  // ✅ tīra tikai mainīgos laukus
-  document.getElementById("length").value = "";
-  document.getElementById("pieces").value = "";
-  document.getElementById("packWidth").value = "";
-  document.getElementById("packLength").value = "";
-  document.getElementById("packHeight").value = "";
-  document.getElementById("avgLength").value = "";
-
-  document.getElementById("length").focus();
+  // ✅ tīrīšana
+  clearForm();
+  
   document.getElementById("galiInputs").style.display = "none";
 }
 
+// ✅ Atcelt
+function cancelEdit() {
+
+  editIndex = null;
+
+  document.getElementById("addBtn").innerText =
+    "➕ Pievienot";
+
+  document.getElementById("cancelEditBtn").style.display =
+    "none";
+
+  clearForm();
+  clearError();
+
+  showMessage("Labošana atcelta");
+}
 
 // ✅ TABULA
 function render() {
@@ -416,9 +417,13 @@ function remove(i) {
 
 
 // ✅ EDIT
+
 function edit(i) {
 
   const e = data[i];
+
+  // ✅ atceramies kuru ierakstu labo
+  editIndex = i;
 
   document.getElementById("area").value = e.area;
   document.getElementById("packages").value = e.packages;
@@ -427,24 +432,33 @@ function edit(i) {
   document.getElementById("length").value = e.length;
   document.getElementById("month").value = e.month;
   document.getElementById("year").value = e.year;
-
+  document.getElementById("pieces").value = e.pieces;
   document.getElementById("name").value = e.name;
   document.getElementById("productCode").value = e.code;
   document.getElementById("grade").value = e.grade;
   document.getElementById("comment").value = e.comment;
 
   if ((e.length || "").toLowerCase() === "gali") {
+
     document.getElementById("galiInputs").style.display = "block";
 
     document.getElementById("packWidth").value = e.packWidth;
     document.getElementById("packLength").value = e.packLength;
     document.getElementById("packHeight").value = e.packHeight;
     document.getElementById("avgLength").value = e.avgLength || "";
+  }  
+  else {
+    document.getElementById("galiInputs").style.display = "none";
   }
 
-  data.splice(i, 1);
-  localStorage.setItem("data", JSON.stringify(data));
-  render();
+
+  // ✅ poga pāriet labošanas režīmā 
+document.getElementById("addBtn").innerText =
+  "💾 Saglabāt labojumu";
+
+document.getElementById("cancelEditBtn").style.display =
+  "inline-block";
+
 }
 
 
@@ -481,6 +495,7 @@ window.onload = () => {
 
 const lengthInput = document.getElementById("length");
 const block = document.getElementById("galiInputs");
+const calcInfo = document.getElementById("calcInfo");
 
 if (lengthInput && block) {
   lengthInput.addEventListener("input", (e) => {
@@ -488,20 +503,11 @@ if (lengthInput && block) {
     const isGali = val === "gali";
 
     block.style.display = isGali ? "block" : "none";
+    calcInfo.style.display = isGali ? "block" : "none";
 
     if (isGali) calculateGali();
   });
 }
-
-  // LOAD FORM
-  const savedForm = localStorage.getItem("lastForm");
-  if (savedForm) {
-    const f = JSON.parse(savedForm);
-    document.getElementById("area").value = f.area || "";
-    document.getElementById("thickness").value = f.thickness || "";
-    document.getElementById("width").value = f.width || "";
-    document.getElementById("grade").value = f.grade || "";
-  }
 
   // ✅ LIVE APRĒĶINS
   document.getElementById("avgLength").addEventListener("input", calculateGali);
@@ -522,6 +528,36 @@ function clearError() {
   document.getElementById("error").innerText = "";
 }
 
+function clearForm() {
+
+  document.getElementById("packages").value = "";
+  document.getElementById("thickness").value = "";
+  document.getElementById("width").value = "";
+  document.getElementById("length").value = "";
+
+  document.getElementById("month").value = "";
+  document.getElementById("year").value = "";
+
+  document.getElementById("name").value = "";
+  document.getElementById("productCode").value = "";
+  document.getElementById("grade").value = "";
+  document.getElementById("comment").value = "";
+
+  document.getElementById("pieces").value = "";
+
+  document.getElementById("packWidth").value = "";
+  document.getElementById("packLength").value = "";
+  document.getElementById("packHeight").value = "";
+  document.getElementById("avgLength").value = "";
+
+  document.getElementById("galiInputs").style.display = "none";
+
+  const calcInfo = document.getElementById("calcInfo");
+  if (calcInfo) {
+    calcInfo.style.display = "none";
+  }
+}
+
 
 // ✅ TABULAS SLĒPŠANA
 let tableVisible = true;
@@ -531,6 +567,7 @@ function toggleTable() {
   tableVisible = !tableVisible;
   t.style.display = tableVisible ? "table" : "none";
 }
+
 
 function calculateGali() {
 
@@ -546,9 +583,7 @@ function calculateGali() {
     thicknessVal <= 0 || widthVal <= 0 ||
     packWidth <= 0 || packLength <= 0 || packHeight <= 0 ||
     avgLength <= 0
-  ) {
-    return;
-  }
+  ) return;
 
   let crossSection = thicknessVal * widthVal;
   let packSection = packWidth * packHeight;
@@ -556,16 +591,91 @@ function calculateGali() {
   let piecesInLayer = Math.floor(packSection / crossSection);
   let layers = Math.floor(packLength / avgLength);
 
-  let efficiency = 0.7;
+  // ✅ MAINĪJUMS ŠEIT
+  let efficiency = 0.95;
 
   let piecesPerPack =
     Math.max(1, Math.floor(piecesInLayer * layers * efficiency));
 
-  // ✅ IEVIETO LAUKĀ
-  document.getElementById("pieces").value = piecesPerPack;
+  // ✅ PARĀDA AR ≈
+  document.getElementById("pieces").value =
+    "≈ " + piecesPerPack;
+  document.getElementById("calcInfo").style.display = "block";
+  
 }
 
-  //
+ //✅ Border
+function borderAll() {
+  return {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" }
+  };
+}
+
+//✅ Color
+function fillGray() {
+  return {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFD9D9D9" }
+  };
+}
+
+//✅ Row style
+
+function applyRowStyle(row, type) {
+
+  let color;
+
+  switch (type) {
+    case "lightGreen":
+      color = "FFC6EFCE";
+      break;
+    case "yellow":
+      color = "FFFFEB9C";
+      break;
+    case "softGreen":
+      color = "FFE2EFDA";
+      break;
+    case "blue":
+      color = "FFBDD7EE";
+      break;
+    case "beige":
+      color = "FFFCE4D6";
+      break;
+    default:
+      color = "FFFFFFFF";
+  }
+
+  // ✅ palielina rindas augstumu (vizuāls "padding")
+  row.height = 22;
+
+  row.eachCell((cell, colNumber) => {
+
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: color }
+    };
+
+    cell.border = borderAll();
+
+    // ✅ centrē tekstu visur
+    cell.alignment = {
+      vertical: "middle",
+      horizontal: colNumber === 2 ? "left" : "center",
+      wrapText: true,
+      indent: colNumber === 2 ? 1 : 0
+    };
+
+  });
+}
+
+
+  //✅ Export Excel
+
 async function exportExcel() {
 
   if (data.length === 0) {
@@ -577,38 +687,131 @@ async function exportExcel() {
   const name = localStorage.getItem("userName") || "";
 
   const d = new Date();
-
+  const safeLocation = safeFileName(location);
+  const safeName = safeFileName(name);
   const dateStr =
     String(d.getDate()).padStart(2, "0") + "." +
     String(d.getMonth() + 1).padStart(2, "0") + "." +
     d.getFullYear();
-
+  
   const fileDate =
     String(d.getDate()).padStart(2, "0") + "-" +
     String(d.getMonth() + 1).padStart(2, "0") + "-" +
     d.getFullYear();
 
+  const timeStr =
+  String(d.getHours()).padStart(2, "0") +
+  String(d.getMinutes()).padStart(2, "0") +
+  String(d.getSeconds()).padStart(2, "0");
+
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Inventarizācija");
 
-  // ✅ TITLE
-  ws.mergeCells("A1:N1");
+ //✅ TITLE
+  ws.mergeCells("A1:O1");
   ws.getCell("A1").value = "Nepabeigtas Ražošanas Inventarizācijas protokols";
   ws.getCell("A1").alignment = { horizontal: "center" };
   ws.getCell("A1").font = { bold: true, size: 14 };
 
-  // ✅ INFO RINDA
-  ws.getCell("A3").value = "Datums:";
-  ws.getCell("B3").value = dateStr;
+  ws.addRow([]);
 
-  ws.getCell("E3").value = "Sastādīja:";
-  ws.getCell("F3").value = name;
 
-  ws.getCell("I3").value = "Ražotne:";
-  ws.getCell("J3").value = location;
+//✅ SKAIDROJUMU BLOKS
 
-  // ✅ HEADER
-  const headerRow = 5;
+function addLegendRow(values, color) {
+  let row = ws.addRow(values);
+
+  applyRowStyle(row, color);
+
+  let r = row.number;
+
+  // ✅ merge Skaidrojums (B → L)
+  ws.mergeCells(`B${r}:L${r}`);
+
+  // ✅ skaists alignment
+  ws.getCell(`B${r}`).alignment = {
+    vertical: "middle",
+    horizontal: "left",
+    wrapText: true,
+    indent: 1
+  };
+}
+
+// ✅ HEADER
+let legendHeader = ws.addRow([
+  "Šķira", "Skaidrojums", "", "", "", "", "", "", "", "", "", "", "", "Apzīmējums"
+]);
+
+legendHeader.eachCell(cell => {
+  cell.font = { bold: true };
+  cell.alignment = { horizontal: "center", vertical: "middle" };
+  cell.border = borderAll();
+  cell.fill = fillGray();
+});
+
+// ✅ HEADER merge arī
+let hr = legendHeader.number;
+ws.mergeCells(`B${hr}:L${hr}`);
+
+// ✅ ROWS
+addLegendRow(
+  ["K kods", "Sakomplektēta produkcija", "", "", "", "", "", "", "", "", "", "", "", "K"],
+  "lightGreen"
+);
+
+addLegendRow(
+  ["Augstākā šķira", "Pilnībā gatava detaļa, pabeigtas visas operācijas, t.sk., impregnācija", "", "", "", "", "", "", "", "", "", "", "", "A"],
+  "yellow"
+);
+
+// ✅ 1. šķira
+[
+  ["1. šķira", "Ēvelēti dēļi", "1a"],
+  ["", "Neēvelēti, bet sagarināti dēļi", "1b"],
+  ["", "Ēvelētas sagarinātas sagataves", "1c"],
+  ["", "Tālākā apstrādē esošas sagataves", "1d"]
+].forEach(r => {
+  addLegendRow(
+    [r[0], r[1], "", "", "", "", "", "", "", "", "", "", "", r[2]],
+    "softGreen"
+  );
+});
+
+// ✅ 2. šķira
+[
+  ["2. šķira", "Sagataves, detaļas un gali, kurām pagaidām nav konkrēta pielietojuma", "2a"],
+  ["", "Brāķis, kuram redzams pielietojums - varam izmantot tālākā apstrādē", "2b"],
+  ["", "Brāķis, kuram nav pielietojums - iznīcināms", "2c"]
+].forEach(r => {
+  addLegendRow(
+    [r[0], r[1], "", "", "", "", "", "", "", "", "", "", "", r[2]],
+    "blue"
+  );
+});
+
+// ✅ Paletes
+addLegendRow(
+  ["Paletes", "Paletes gatavai produkcijai", "", "", "", "", "", "", "", "", "", "", "", "PAL"],
+  "beige"
+);
+
+ws.addRow([]);
+ws.addRow([]);
+
+
+  //✅ INFO
+
+  ws.addRow([
+    "Datums:", dateStr,
+    "", "",
+    "Sastādīja:", name,
+    "", "",
+    "Ražotne:", location
+  ]);
+
+  ws.addRow([]);
+
+  //✅ TABULAS HEADER
 
   const headers = [
     "Apgabals",
@@ -625,144 +828,174 @@ async function exportExcel() {
     "Gads",
     "Šķira",
     "Komentārs",
+    "",
     "m3 kopā"
   ];
 
-  const header = ws.addRow(headers);
+  const tableHeader = ws.addRow(headers);
 
-  header.eachCell(cell => {
+  tableHeader.eachCell(cell => {
     cell.font = { bold: true };
-    cell.alignment = { horizontal: "center", vertical: "middle" };
-
-    cell.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FFD9D9D9" } // pelēks
-    };
-
-    cell.border = {
-      top: { style: "thin" },
-      left: { style: "thin" },
-      bottom: { style: "thin" },
-      right: { style: "thin" }
-    };
+    cell.alignment = { horizontal: "center" };
+    cell.border = borderAll();
+    cell.fill = fillGray();
   });
 
-  // ✅ DATA
-  
-let startRow = 5;
-let totalPackages = 0;
+  const startRow = tableHeader.number + 1;
 
-data.forEach(e => {
+ //✅ DATA
 
-  totalPackages += e.packages || 0;
+  let totalPackages = 0;
 
-  let pieceM3 = 0;
+  data.forEach(e => {
 
-  if ((e.length || "").toLowerCase() === "gali") {
-    pieceM3 = (e.thickness * e.width * e.avgLength) / 1000000000;
-  } else {
-    pieceM3 = (e.thickness * e.width * Number(e.length)) / 1000000000;
-  }
+    totalPackages += e.packages || 0;
 
-  const rowIndex = ws.rowCount + 1;
+    let pieceM3 = 0;
 
-  const row = ws.addRow([
-    e.area,
-    e.packages,
-    e.name,
-    e.code,
-    Number(e.m3Pack?.toFixed(4)),
+    if ((e.length || "").toLowerCase() === "gali") {
+      pieceM3 = (e.thickness * e.width * e.avgLength) / 1000000000;
+    } else {
+      pieceM3 = (e.thickness * e.width * Number(e.length)) / 1000000000;
+    }
 
-    e.thickness,
-    e.width,
-    e.length,
+    const rowIndex = ws.rowCount + 1;
 
-    e.pieces,
-    Number(pieceM3.toFixed(5)),
+    const row = ws.addRow([
+      e.area,
+      e.packages,
+      e.name,
+      e.code,
+      Number(e.m3Pack?.toFixed(4)),
+      e.thickness,
+      e.width,      
+      (e.length || "").toLowerCase() === "gali"
+        ? e.avgLength || ""
+        : Number(e.length),
+      e.pieces,
+      Number(pieceM3.toFixed(5)),
+      String(e.month).padStart(2, "0"),
+      e.year < 100 ? "20" + e.year : e.year,
+      e.grade,
+      e.comment,
+      (e.length || "").toLowerCase() === "gali" ? "Gali" : "",
+      { formula: `B${rowIndex}*E${rowIndex}` }
+    ]);
 
-    String(e.month).padStart(2, "0"),
-    e.year < 100 ? "20" + e.year : e.year,
-
-    e.grade,
-    e.comment,
-    { formula: `B${rowIndex}*E${rowIndex}` }
-  ]);
-
-  row.eachCell(cell => {
-    cell.border = {
-      top: { style: "thin" },
-      left: { style: "thin" },
-      bottom: { style: "thin" },
-      right: { style: "thin" }
-    };
+    row.eachCell(cell => {
+      cell.border = borderAll();
+    });
   });
-});
 
-  let lastRow = ws.rowCount;
+  const lastRow = ws.rowCount;
 
-  // ✅ SUM
+  //✅ SUM
   ws.addRow([]);
 
-ws.addRow([
-  "Pakas kopā:",
-  { formula: `SUM(B${startRow}:B${lastRow})`, result: totalPackages }
-]);
-  
-ws.addRow([
-  "m3 kopā:",
-  { formula: `SUM(O${startRow}:O${lastRow})` }
-]);
+  ws.addRow([
+    "Pakas kopā:",
+    { formula: `SUM(B${startRow}:B${lastRow})`, result: totalPackages }
+  ]);
 
+  ws.addRow([
+    "m3 kopā:",
+    { formula: `SUM(P${startRow}:P${lastRow})` }
+  ]);
 
-  // ✅ COLUMN WIDTH
+  //✅ COLUMN WIDTH
+
   [
     10, 12, 25, 20, 14,
     10, 10, 10,
     16, 10,
     10, 10,
-    10, 25
+    10, 25, 10, 12
   ].forEach((w, i) => {
     ws.getColumn(i + 1).width = w;
   });
 
-  // ✅ SAVE
+  //✅ SAVE
+
   const buf = await wb.xlsx.writeBuffer();
-  saveAs(new Blob([buf]), `inv_${fileDate}.xlsx`);
+  saveAs(
+  new Blob([buf]),
+  `inv_${safeLocation}_${safeName}_${fileDate}_${timeStr}.xlsx`
+);
 }
+
 
 
   // ✅ LOG OUT
+
+function doLogout() {
+
+  localStorage.removeItem("data");
+  localStorage.removeItem("userName");
+  localStorage.removeItem("location");
+
+  data = [];
+
+  document.getElementById("appContent").style.display = "none";
+  document.getElementById("locationSelect").style.display = "block";
+
+  render();
+}
+
+
 function endSession() {
 
-  const confirmSave = confirm("Vai ievadītie dati tika saglabāti?");
-
+  // ✅ JA NAV DATU → vienkārši iziet
   if (data.length === 0) {
-    alert("Nav datu ko dzēst");
+    doLogout();
     return;
   }
 
-  if (confirmSave) {
+  // ✅ IR DATI → gudrais dialogs
+  const choice = confirm(
+    "Tev ir ievadīti dati.\n\nOK = Saglabāt Excel un iziet\nCancel = Vēl neiziet"
+  );
 
-    // ✅ dzēš datus
-    localStorage.removeItem("data");
-    data = [];
+  if (choice) {
+    // ✅ saglabā Excel
+    exportExcel();
 
-    // ✅ dzēš lietotāju (ja gribi pilnu restartu)
-    localStorage.removeItem("userName");
-    localStorage.removeItem("location");
-
-    // ✅ atgriežas uz login
-    document.getElementById("appContent").style.display = "none";
-    document.getElementById("locationSelect").style.display = "block";
-
-    // ✅ notīra tabulu
-    render();
-
-  } else {
-
-    // ❌ neko nedara
-    alert("Saglabā datus pirms iziešanas!");
-
+    // ✅ iziet
+    doLogout();
   }
+
+  // ❌ ja Cancel → neko nedara
 }
+
+// ✅ SERVICE WORKER
+
+if ("serviceWorker" in navigator) {
+
+  navigator.serviceWorker.register("/Inventory-app/sw.js")
+    .then(reg => {
+
+      console.log("SW registered");
+
+      // ✅ pārbauda update
+      setInterval(() => {
+        reg.update();
+      }, 60000); // ik 60 sekundes
+
+    })
+    .catch(err => console.log("SW error", err));
+}
+
+
+// ✅ INSTALL PROMPT (Android)
+let deferredPrompt;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  console.log("Install pieejams");
+});
+
+// ✅ AUTO REFRESH JA IR JAUNA VERSIJA
+navigator.serviceWorker.addEventListener("controllerchange", () => {
+  console.log("New version loaded → reload");
+  window.location.reload();
+});
