@@ -205,6 +205,11 @@ function add() {
     return error("Gads obligāts");
 
   let rawLength = document.getElementById("length").value.trim();
+
+  if (isGaliMode) {
+    rawLength = "gali";
+  }
+  
   let lengthVal = rawLength.toLowerCase();
 
   let totalM3 = 0;
@@ -218,6 +223,27 @@ function add() {
   let avgLength = null;
 
   // ✅ GALI režīms
+  
+  let isGaliMode = false;
+  
+  function toggleGali() {
+  isGaliMode = !isGaliMode;
+  
+  const block = document.getElementById("galiInputs");
+  const calcInfo = document.getElementById("calcInfo");
+  const btn = document.getElementById("galiBtn");
+  
+  if (isGaliMode) {
+  block.style.display = "block";
+  calcInfo.style.display = "block";
+  btn.classList.add("active");
+  } else {
+  block.style.display = "none";
+  calcInfo.style.display = "none";
+  btn.classList.remove("active");
+  }
+}
+  
   if (lengthVal === "gali") {
 
     packWidth = Number(document.getElementById("packWidth").value);
