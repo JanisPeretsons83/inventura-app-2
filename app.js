@@ -185,6 +185,7 @@ function add() {
   const widthVal = Number(document.getElementById("width").value);
 
   const monthVal = Number(document.getElementById("month").value);
+  console.log("Mēnesis:", monthVal);
   const yearVal = Number(document.getElementById("year").value);
 
   if (!areaVal) return error("Apgabals obligāts");
